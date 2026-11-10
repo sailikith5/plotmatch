@@ -32,10 +32,14 @@ DROP USER IF EXISTS 'plotmatch_app'@'localhost';
 DROP USER IF EXISTS 'plotmatch_readonly'@'localhost';
 DROP USER IF EXISTS 'plotmatch_admin'@'localhost';
 
--- Replace these passwords before any non-local deployment.
-CREATE USER 'plotmatch_app'@'localhost'      IDENTIFIED BY 'app_Passw0rd!';
-CREATE USER 'plotmatch_readonly'@'localhost' IDENTIFIED BY 'read_Passw0rd!';
-CREATE USER 'plotmatch_admin'@'localhost'    IDENTIFIED BY 'admin_Passw0rd!';
+-- Generated passwords for the three local database accounts. They are
+-- committed deliberately: these accounts exist only on localhost and hold
+-- no privilege beyond this demo database. The MySQL ROOT password is NOT
+-- here - it lives in .env.local, which .gitignore excludes.
+-- Regenerate all three before any deployment that is not localhost.
+CREATE USER 'plotmatch_app'@'localhost'      IDENTIFIED BY 'TnOiHErlz7pgAIWajmZn5E';
+CREATE USER 'plotmatch_readonly'@'localhost' IDENTIFIED BY 'BaSeKviDNRM1x41aas5ps2';
+CREATE USER 'plotmatch_admin'@'localhost'    IDENTIFIED BY 'gAbrlru5a3Grcf0hbip3gn';
 
 -- =============================================================================
 -- SECTION 2 — GRANT
