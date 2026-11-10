@@ -1,0 +1,247 @@
+/* ===========================================================================
+   PlotMatch — Relational Schema Diagram
+
+   Render:  dot -Tpng -Gdpi=120 docs/relational-schema.dot -o docs/relational-schema.png
+
+   PK  primary key          UK  unique key
+   FK  foreign key          GEN generated (stored) column
+   *   derived / materialised value, maintained by trigger
+
+   Edge labels give the participation of the CHILD side. Note that most are
+   0..N, not 1..N: a title with no ratings is legal and a user with an empty
+   watchlist is legal. The v2 diagram labelled these 1..N, which asserts that
+   every title must have been rated — a constraint the schema does not (and
+   should not) enforce.
+   =========================================================================== */
+
+digraph PlotMatchSchema {
+  graph [
+    bgcolor="white", rankdir=LR, splines=polyline, nodesep=0.5, ranksep=1.5,
+    fontname="Helvetica", labelloc="t", fontsize=22,
+    label="PlotMatch — Relational Schema\n "
+  ];
+  node [shape=plaintext, fontname="Helvetica", fontsize=11];
+  edge [fontname="Helvetica", fontsize=10, color="#2B4466", arrowhead=crow, arrowtail=none];
+
+  /* ---------------- Authorization ---------------- */
+
+  roles [label=<
+    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD BGCOLOR="#4A6B3D" COLSPAN="2"><FONT COLOR="white"><B>roles</B></FONT></TD></TR>
+      <TR><TD BGCOLOR="#DDEBD8" ALIGN="LEFT">PK</TD><TD BGCOLOR="#DDEBD8" ALIGN="LEFT">id</TD></TR>
+      <TR><TD ALIGN="LEFT">UK</TD><TD ALIGN="LEFT">name</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">description</TD></TR>
+    </TABLE>>];
+
+  permissions [label=<
+    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD BGCOLOR="#4A6B3D" COLSPAN="2"><FONT COLOR="white"><B>permissions</B></FONT></TD></TR>
+      <TR><TD BGCOLOR="#DDEBD8" ALIGN="LEFT">PK</TD><TD BGCOLOR="#DDEBD8" ALIGN="LEFT">id</TD></TR>
+      <TR><TD ALIGN="LEFT">UK</TD><TD ALIGN="LEFT">code</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">description</TD></TR>
+    </TABLE>>];
+
+  role_permissions [label=<
+    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD BGCOLOR="#7A9B6D" COLSPAN="2"><FONT COLOR="white"><B>role_permissions</B></FONT></TD></TR>
+      <TR><TD BGCOLOR="#DDEBD8" ALIGN="LEFT">PK,FK</TD><TD BGCOLOR="#DDEBD8" ALIGN="LEFT">role_id</TD></TR>
+      <TR><TD BGCOLOR="#DDEBD8" ALIGN="LEFT">PK,FK</TD><TD BGCOLOR="#DDEBD8" ALIGN="LEFT">permission_id</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">granted_at</TD></TR>
+    </TABLE>>];
+
+  /* ---------------- Core ---------------- */
+
+  users [label=<
+    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD BGCOLOR="#2B4466" COLSPAN="2"><FONT COLOR="white"><B>users</B></FONT></TD></TR>
+      <TR><TD BGCOLOR="#DCE6F2" ALIGN="LEFT">PK</TD><TD BGCOLOR="#DCE6F2" ALIGN="LEFT">id</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">name</TD></TR>
+      <TR><TD ALIGN="LEFT">UK</TD><TD ALIGN="LEFT">email</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">password_hash</TD></TR>
+      <TR><TD BGCOLOR="#DCE6F2" ALIGN="LEFT">FK</TD><TD BGCOLOR="#DCE6F2" ALIGN="LEFT">role_id</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">is_active</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">created_at</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">updated_at</TD></TR>
+    </TABLE>>];
+
+  titles [label=<
+    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD BGCOLOR="#5B4B8A" COLSPAN="2"><FONT COLOR="white"><B>titles</B></FONT></TD></TR>
+      <TR><TD BGCOLOR="#EDE7F3" ALIGN="LEFT">PK</TD><TD BGCOLOR="#EDE7F3" ALIGN="LEFT">id</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">name</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">type</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">release_year</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">description</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">poster_url</TD></TR>
+      <TR><TD ALIGN="LEFT">*</TD><TD ALIGN="LEFT"><I>avg_rating</I></TD></TR>
+      <TR><TD ALIGN="LEFT">*</TD><TD ALIGN="LEFT"><I>rating_count</I></TD></TR>
+      <TR><TD ALIGN="LEFT">GEN</TD><TD ALIGN="LEFT"><I>is_rated</I></TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">is_archived</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">created_at</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">updated_at</TD></TR>
+    </TABLE>>];
+
+  genres [label=<
+    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD BGCOLOR="#4A6B3D" COLSPAN="2"><FONT COLOR="white"><B>genres</B></FONT></TD></TR>
+      <TR><TD BGCOLOR="#DDEBD8" ALIGN="LEFT">PK</TD><TD BGCOLOR="#DDEBD8" ALIGN="LEFT">id</TD></TR>
+      <TR><TD ALIGN="LEFT">UK</TD><TD ALIGN="LEFT">name</TD></TR>
+    </TABLE>>];
+
+  people [label=<
+    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD BGCOLOR="#4A6B3D" COLSPAN="2"><FONT COLOR="white"><B>people</B></FONT></TD></TR>
+      <TR><TD BGCOLOR="#DDEBD8" ALIGN="LEFT">PK</TD><TD BGCOLOR="#DDEBD8" ALIGN="LEFT">id</TD></TR>
+      <TR><TD ALIGN="LEFT">UK</TD><TD ALIGN="LEFT">name</TD></TR>
+    </TABLE>>];
+
+  title_genres [label=<
+    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD BGCOLOR="#8A7BB5" COLSPAN="2"><FONT COLOR="white"><B>title_genres</B></FONT></TD></TR>
+      <TR><TD BGCOLOR="#EDE7F3" ALIGN="LEFT">PK,FK</TD><TD BGCOLOR="#EDE7F3" ALIGN="LEFT">title_id</TD></TR>
+      <TR><TD BGCOLOR="#EDE7F3" ALIGN="LEFT">PK,FK</TD><TD BGCOLOR="#EDE7F3" ALIGN="LEFT">genre_id</TD></TR>
+    </TABLE>>];
+
+  title_people [label=<
+    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD BGCOLOR="#8A7BB5" COLSPAN="2"><FONT COLOR="white"><B>title_people</B></FONT></TD></TR>
+      <TR><TD BGCOLOR="#EDE7F3" ALIGN="LEFT">PK,FK</TD><TD BGCOLOR="#EDE7F3" ALIGN="LEFT">title_id</TD></TR>
+      <TR><TD BGCOLOR="#EDE7F3" ALIGN="LEFT">PK,FK</TD><TD BGCOLOR="#EDE7F3" ALIGN="LEFT">person_id</TD></TR>
+      <TR><TD BGCOLOR="#EDE7F3" ALIGN="LEFT">PK</TD><TD BGCOLOR="#EDE7F3" ALIGN="LEFT">role</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">billing</TD></TR>
+    </TABLE>>];
+
+  ratings [label=<
+    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD BGCOLOR="#A33327" COLSPAN="2"><FONT COLOR="white"><B>ratings</B></FONT></TD></TR>
+      <TR><TD BGCOLOR="#F4E3DF" ALIGN="LEFT">PK</TD><TD BGCOLOR="#F4E3DF" ALIGN="LEFT">id</TD></TR>
+      <TR><TD BGCOLOR="#F4E3DF" ALIGN="LEFT">UK,FK</TD><TD BGCOLOR="#F4E3DF" ALIGN="LEFT">user_id</TD></TR>
+      <TR><TD BGCOLOR="#F4E3DF" ALIGN="LEFT">UK,FK</TD><TD BGCOLOR="#F4E3DF" ALIGN="LEFT">title_id</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">score</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">review_text</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">created_at</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">updated_at</TD></TR>
+    </TABLE>>];
+
+  watchlist [label=<
+    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD BGCOLOR="#A33327" COLSPAN="2"><FONT COLOR="white"><B>watchlist</B></FONT></TD></TR>
+      <TR><TD BGCOLOR="#F4E3DF" ALIGN="LEFT">PK,FK</TD><TD BGCOLOR="#F4E3DF" ALIGN="LEFT">user_id</TD></TR>
+      <TR><TD BGCOLOR="#F4E3DF" ALIGN="LEFT">PK,FK</TD><TD BGCOLOR="#F4E3DF" ALIGN="LEFT">title_id</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">added_at</TD></TR>
+    </TABLE>>];
+
+  /* ---------------- Sessions ---------------- */
+
+  sessions [label=<
+    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD BGCOLOR="#8A6D1F" COLSPAN="2"><FONT COLOR="white"><B>sessions</B></FONT></TD></TR>
+      <TR><TD BGCOLOR="#FDF0D5" ALIGN="LEFT">PK</TD><TD BGCOLOR="#FDF0D5" ALIGN="LEFT">id</TD></TR>
+      <TR><TD BGCOLOR="#FDF0D5" ALIGN="LEFT">FK</TD><TD BGCOLOR="#FDF0D5" ALIGN="LEFT">host_user_id</TD></TR>
+      <TR><TD ALIGN="LEFT">UK</TD><TD ALIGN="LEFT">invite_code</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">title_type</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">status</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">created_at</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">finalized_at</TD></TR>
+    </TABLE>>];
+
+  session_members [label=<
+    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD BGCOLOR="#B59A4A" COLSPAN="2"><FONT COLOR="white"><B>session_members</B></FONT></TD></TR>
+      <TR><TD BGCOLOR="#FDF0D5" ALIGN="LEFT">PK,FK</TD><TD BGCOLOR="#FDF0D5" ALIGN="LEFT">session_id</TD></TR>
+      <TR><TD BGCOLOR="#FDF0D5" ALIGN="LEFT">PK,FK</TD><TD BGCOLOR="#FDF0D5" ALIGN="LEFT">user_id</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">joined_at</TD></TR>
+    </TABLE>>];
+
+  session_swipes [label=<
+    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD BGCOLOR="#B59A4A" COLSPAN="2"><FONT COLOR="white"><B>session_swipes</B></FONT></TD></TR>
+      <TR><TD BGCOLOR="#FDF0D5" ALIGN="LEFT">PK</TD><TD BGCOLOR="#FDF0D5" ALIGN="LEFT">id</TD></TR>
+      <TR><TD BGCOLOR="#FDF0D5" ALIGN="LEFT">UK,FK</TD><TD BGCOLOR="#FDF0D5" ALIGN="LEFT">session_id</TD></TR>
+      <TR><TD BGCOLOR="#FDF0D5" ALIGN="LEFT">UK,FK</TD><TD BGCOLOR="#FDF0D5" ALIGN="LEFT">user_id</TD></TR>
+      <TR><TD BGCOLOR="#FDF0D5" ALIGN="LEFT">UK,FK</TD><TD BGCOLOR="#FDF0D5" ALIGN="LEFT">title_id</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">liked</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">swiped_at</TD></TR>
+    </TABLE>>];
+
+  session_recs [label=<
+    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD BGCOLOR="#B59A4A" COLSPAN="2"><FONT COLOR="white"><B>session_recs</B></FONT></TD></TR>
+      <TR><TD BGCOLOR="#FDF0D5" ALIGN="LEFT">PK</TD><TD BGCOLOR="#FDF0D5" ALIGN="LEFT">id</TD></TR>
+      <TR><TD BGCOLOR="#FDF0D5" ALIGN="LEFT">UK,FK</TD><TD BGCOLOR="#FDF0D5" ALIGN="LEFT">session_id</TD></TR>
+      <TR><TD BGCOLOR="#FDF0D5" ALIGN="LEFT">UK,FK</TD><TD BGCOLOR="#FDF0D5" ALIGN="LEFT">title_id</TD></TR>
+      <TR><TD ALIGN="LEFT">UK</TD><TD ALIGN="LEFT">rank_position</TD></TR>
+      <TR><TD ALIGN="LEFT">*</TD><TD ALIGN="LEFT"><I>match_score</I></TD></TR>
+      <TR><TD ALIGN="LEFT">*</TD><TD ALIGN="LEFT"><I>agreement_pct</I></TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">generated_at</TD></TR>
+    </TABLE>>];
+
+  /* ---------------- Polyglot bridge ---------------- */
+
+  title_embeddings [label=<
+    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD BGCOLOR="#5B4B8A" COLSPAN="2"><FONT COLOR="white"><B>title_embeddings</B></FONT></TD></TR>
+      <TR><TD BGCOLOR="#EDE7F3" ALIGN="LEFT">PK,FK</TD><TD BGCOLOR="#EDE7F3" ALIGN="LEFT">title_id</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">model_name</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">dimensions</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">mongo_doc_id</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">status</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">source_hash</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">embedded_at</TD></TR>
+    </TABLE>>];
+
+  mongo [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="7" STYLE="dashed" COLOR="#5B4B8A">
+      <TR><TD><B>MongoDB — title_vectors</B></TD></TR>
+      <TR><TD ALIGN="LEFT">titleId  (join key)</TD></TR>
+      <TR><TD ALIGN="LEFT">embedding[384]</TD></TR>
+      <TR><TD ALIGN="LEFT">model, dimensions</TD></TR>
+      <TR><TD ALIGN="LEFT">sourceHash</TD></TR>
+      <TR><TD ALIGN="LEFT"><I>vector_index (HNSW)</I></TD></TR>
+    </TABLE>>];
+
+  audit_log [label=<
+    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD BGCOLOR="#5A635E" COLSPAN="2"><FONT COLOR="white"><B>audit_log</B></FONT></TD></TR>
+      <TR><TD BGCOLOR="#E6E7E1" ALIGN="LEFT">PK</TD><TD BGCOLOR="#E6E7E1" ALIGN="LEFT">id</TD></TR>
+      <TR><TD BGCOLOR="#E6E7E1" ALIGN="LEFT">FK</TD><TD BGCOLOR="#E6E7E1" ALIGN="LEFT">actor_user_id</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">action</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">entity_type</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">entity_id</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">detail (JSON)</TD></TR>
+      <TR><TD ALIGN="LEFT"></TD><TD ALIGN="LEFT">occurred_at</TD></TR>
+    </TABLE>>];
+
+  /* ---------------- Foreign keys ---------------- */
+
+  roles            -> users            [label="0..N  RESTRICT"];
+  roles            -> role_permissions [label="0..N  CASCADE"];
+  permissions      -> role_permissions [label="0..N  CASCADE"];
+
+  titles -> title_genres [label="0..N  CASCADE"];
+  genres -> title_genres [label="0..N  CASCADE"];
+  titles -> title_people [label="0..N  CASCADE"];
+  people -> title_people [label="0..N  CASCADE"];
+
+  users  -> ratings   [label="0..N  CASCADE"];
+  titles -> ratings    [label="0..N  CASCADE"];
+  users  -> watchlist  [label="0..N  CASCADE"];
+  titles -> watchlist  [label="0..N  CASCADE"];
+
+  users    -> sessions        [label="0..N  RESTRICT", color="#A33327"];
+  sessions -> session_members [label="1..N  CASCADE"];
+  users    -> session_members [label="0..N  CASCADE"];
+
+  /* The composite FK: a swipe must correspond to a real membership. */
+  session_members -> session_swipes [label="0..N  CASCADE\n(session_id, user_id)", color="#A33327", penwidth=2];
+  titles          -> session_swipes [label="0..N  CASCADE"];
+
+  sessions -> session_recs [label="0..N  CASCADE"];
+  titles   -> session_recs [label="0..N  CASCADE"];
+
+  titles -> title_embeddings [label="0..1  CASCADE", color="#5B4B8A"];
+  title_embeddings -> mongo  [label="titleId", style=dashed, color="#5B4B8A",
+                              arrowhead=none, penwidth=2];
+
+  users -> audit_log [label="0..N  SET NULL", color="#5A635E"];
+}

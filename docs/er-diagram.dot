@@ -1,0 +1,200 @@
+/* ===========================================================================
+   PlotMatch — Entity-Relationship Diagram (Chen notation)
+
+   Render:  dot -Tpng docs/er-diagram.dot -o docs/er-diagram.png
+
+   Conventions
+     rectangle          strong entity
+     double rectangle   weak entity
+     diamond            relationship
+     double diamond     identifying relationship
+     ellipse            attribute
+     underlined         key / partial key
+     dashed ellipse     derived attribute
+     double ellipse     multivalued attribute
+
+   Corrections against the v2 diagram:
+     RATES and WATCHLISTS were drawn 1:N, which asserts that a title can be
+     rated by at most one user. Both are M:N — the UNIQUE(user_id, title_id)
+     constraint on `ratings` is precisely the M:N signature.
+     CREDITS.role is now underlined: it is part of the primary key of
+     title_people, so it is a discriminator, not a descriptive attribute.
+   =========================================================================== */
+
+graph PlotMatchER {
+  graph [
+    bgcolor="white",
+    overlap="prism", sep="+14",
+    splines=true,
+    nodesep=0.35,
+    ranksep=0.75,
+    fontname="Helvetica",
+    labelloc="t",
+    fontsize=20,
+    label="PlotMatch — Entity-Relationship Diagram (Chen notation)\n "
+  ];
+  node [fontname="Helvetica", fontsize=11];
+  edge [fontname="Helvetica", fontsize=10, len=1.6];
+
+  /* ---------------- Entities ---------------- */
+  node [shape=box, style="filled,bold", fillcolor="#DCE6F2", color="#2B4466", penwidth=2];
+  USERS; TITLES; SESSIONS;
+
+  node [fillcolor="#DDEBD8", color="#4A6B3D"];
+  GENRES; PEOPLE; ROLES; PERMISSIONS;
+
+  node [fillcolor="#F4E3DF", color="#A33327"];
+  AUDIT_LOG;
+
+  /* Weak entities: double border, identified through their owner */
+  node [shape=box, peripheries=2, fillcolor="#EDE7F3", color="#5B4B8A"];
+  TITLE_EMBEDDINGS; SESSION_RECS;
+
+  /* ---------------- Relationships ---------------- */
+  node [shape=diamond, peripheries=1, style="filled", fillcolor="#FDF0D5",
+        color="#8A6D1F", penwidth=1.5, fontsize=10];
+  RATES; WATCHLISTS; HAS_GENRE; CREDITS; HOSTS; JOINS; SWIPES; RECOMMENDS;
+  ASSIGNED_ROLE; HOLDS; PERFORMS;
+
+  /* Identifying relationship for the weak entity: double diamond */
+  node [peripheries=2, fillcolor="#EDE7F3", color="#5B4B8A"];
+  EMBEDS;
+
+  /* ---------------- Attributes ---------------- */
+  node [shape=ellipse, peripheries=1, style="filled", fillcolor="white",
+        color="#5A635E", penwidth=1, fontsize=10];
+
+  /* USERS */
+  u_id    [label=<<u>id</u>>];
+  u_name  [label="name"];
+  u_email [label=<<u>email</u>>];
+  u_pw    [label="password_hash"];
+  u_active[label="is_active"];
+  u_made  [label="created_at"];
+
+  /* TITLES */
+  t_id    [label=<<u>id</u>>];
+  t_name  [label="name"];
+  t_type  [label="type"];
+  t_year  [label="release_year"];
+  t_desc  [label="description"];
+  t_arch  [label="is_archived"];
+  t_avg   [label="avg_rating", style="dashed,filled"];
+  t_cnt   [label="rating_count", style="dashed,filled"];
+  t_rated [label="is_rated", style="dashed,filled"];
+
+  /* GENRES / PEOPLE */
+  g_id   [label=<<u>id</u>>];
+  g_name [label=<<u>name</u>>];
+  p_id   [label=<<u>id</u>>];
+  p_name [label=<<u>name</u>>];
+
+  /* SESSIONS */
+  s_id    [label=<<u>id</u>>];
+  s_code  [label=<<u>invite_code</u>>];
+  s_kind  [label="title_type"];
+  s_stat  [label="status"];
+  s_made  [label="created_at"];
+  s_fin   [label="finalized_at"];
+
+  /* ROLES / PERMISSIONS */
+  r_id   [label=<<u>id</u>>];
+  r_name [label=<<u>name</u>>];
+  pm_id  [label=<<u>id</u>>];
+  pm_code[label=<<u>code</u>>];
+
+  /* Weak entity attributes */
+  te_model [label="model_name"];
+  te_dims  [label="dimensions"];
+  te_stat  [label="status"];
+  te_hash  [label="source_hash"];
+
+  sr_rank  [label=<<u>rank_position</u>>];
+  sr_match [label="match_score", style="dashed,filled"];
+  sr_agree [label="agreement_pct", style="dashed,filled"];
+
+  /* AUDIT_LOG */
+  a_id   [label=<<u>id</u>>];
+  a_act  [label="action"];
+  a_when [label="occurred_at"];
+  a_det  [label="detail"];
+
+  /* Relationship attributes */
+  rt_score  [label="score"];
+  rt_review [label="review_text"];
+  rt_made   [label="created_at"];
+  wl_added  [label="added_at"];
+  cr_role   [label=<<u>role</u>>];
+  cr_bill   [label="billing"];
+  jn_joined [label="joined_at"];
+  sw_liked  [label="liked"];
+  sw_when   [label="swiped_at"];
+  rp_when   [label="granted_at"];
+
+  /* ---------------- Attribute edges ---------------- */
+  edge [len=1.15, color="#8C938E"];
+  USERS -- {u_id u_name u_email u_pw u_active u_made};
+  TITLES -- {t_id t_name t_type t_year t_desc t_arch t_avg t_cnt t_rated};
+  GENRES -- {g_id g_name};
+  PEOPLE -- {p_id p_name};
+  SESSIONS -- {s_id s_code s_kind s_stat s_made s_fin};
+  ROLES -- {r_id r_name};
+  PERMISSIONS -- {pm_id pm_code};
+  TITLE_EMBEDDINGS -- {te_model te_dims te_stat te_hash};
+  SESSION_RECS -- {sr_rank sr_match sr_agree};
+  AUDIT_LOG -- {a_id a_act a_when a_det};
+
+  RATES -- {rt_score rt_review rt_made};
+  WATCHLISTS -- wl_added;
+  CREDITS -- {cr_role cr_bill};
+  JOINS -- jn_joined;
+  SWIPES -- {sw_liked sw_when};
+  HOLDS -- rp_when;
+
+  /* ---------------- Relationship edges with cardinality ---------------- */
+  edge [len=2.6, color="#1C2321", penwidth=1.4, fontsize=11, fontcolor="#A33327"];
+
+  /* CORRECTED: M:N, not 1:N */
+  USERS  -- RATES      [label="M"];
+  RATES  -- TITLES     [label="N"];
+
+  /* CORRECTED: M:N, not 1:N */
+  USERS      -- WATCHLISTS [label="M"];
+  WATCHLISTS -- TITLES     [label="N"];
+
+  TITLES    -- HAS_GENRE [label="M"];
+  HAS_GENRE -- GENRES    [label="N"];
+
+  TITLES  -- CREDITS [label="M"];
+  CREDITS -- PEOPLE  [label="N"];
+
+  USERS -- HOSTS    [label="1"];
+  HOSTS -- SESSIONS [label="N"];
+
+  USERS -- JOINS    [label="M"];
+  JOINS -- SESSIONS [label="N"];
+
+  /* Ternary: a swipe is one member's vote on one title inside one session */
+  USERS    -- SWIPES [label="M"];
+  SESSIONS -- SWIPES [label="N"];
+  TITLES   -- SWIPES [label="P"];
+
+  SESSIONS  -- RECOMMENDS   [label="1"];
+  RECOMMENDS -- SESSION_RECS [label="N"];
+  SESSION_RECS -- TITLES     [label="1"];
+
+  ROLES         -- ASSIGNED_ROLE [label="1"];
+  ASSIGNED_ROLE -- USERS         [label="N"];
+
+  ROLES -- HOLDS       [label="M"];
+  HOLDS -- PERMISSIONS [label="N"];
+
+  USERS    -- PERFORMS  [label="1"];
+  PERFORMS -- AUDIT_LOG [label="N"];
+
+  /* Identifying relationship: a vector cannot exist without its title and
+     has no key of its own — title_id is both its PK and its FK. */
+  edge [color="#5B4B8A", penwidth=2];
+  TITLES -- EMBEDS           [label="1"];
+  EMBEDS -- TITLE_EMBEDDINGS [label="1"];
+}
