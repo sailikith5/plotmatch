@@ -45,12 +45,38 @@ CREATE USER 'plotmatch_admin'@'localhost'    IDENTIFIED BY 'admin_Passw0rd!';
 -- Day-to-day CRUD, plus EXECUTE so it can call the stored procedures. It is
 -- deliberately NOT granted DROP, ALTER or CREATE: a SQL-injection hole in the
 -- app cannot drop a table, because the connection has no such privilege.
-GRANT SELECT, INSERT, UPDATE, DELETE ON plotmatch.* TO 'plotmatch_app'@'localhost';
+-- Read and append across the whole database...
+GRANT SELECT, INSERT ON plotmatch.* TO 'plotmatch_app'@'localhost';
 GRANT EXECUTE ON plotmatch.* TO 'plotmatch_app'@'localhost';
 
--- The app must never rewrite the audit trail. INSERT and SELECT only: no
--- UPDATE, no DELETE, so history is append-only even to the application.
-REVOKE UPDATE, DELETE ON plotmatch.audit_log FROM 'plotmatch_app'@'localhost';
+-- ...but UPDATE and DELETE are granted table by table, deliberately omitting
+-- audit_log, so the application physically cannot rewrite its own history.
+--
+-- WHY IT IS DONE THIS WAY. The obvious shape -- grant UPDATE and DELETE on
+-- plotmatch.* and then REVOKE them on plotmatch.audit_log -- does not work.
+-- MySQL computes an account's effective privileges as the UNION of what it
+-- holds at the global, database, table and column levels, so a table-level
+-- REVOKE cannot subtract from a database-level GRANT. Attempting it raises
+--   ERROR 1147: There is no such grant defined for user 'plotmatch_app'
+--               on host 'localhost' on table 'audit_log'
+-- because no table-level grant exists there to revoke. A privilege that must
+-- not exist has to be withheld, never granted and then taken back.
+GRANT UPDATE, DELETE ON plotmatch.roles             TO 'plotmatch_app'@'localhost';
+GRANT UPDATE, DELETE ON plotmatch.permissions       TO 'plotmatch_app'@'localhost';
+GRANT UPDATE, DELETE ON plotmatch.role_permissions  TO 'plotmatch_app'@'localhost';
+GRANT UPDATE, DELETE ON plotmatch.users             TO 'plotmatch_app'@'localhost';
+GRANT UPDATE, DELETE ON plotmatch.titles            TO 'plotmatch_app'@'localhost';
+GRANT UPDATE, DELETE ON plotmatch.genres            TO 'plotmatch_app'@'localhost';
+GRANT UPDATE, DELETE ON plotmatch.title_genres      TO 'plotmatch_app'@'localhost';
+GRANT UPDATE, DELETE ON plotmatch.people            TO 'plotmatch_app'@'localhost';
+GRANT UPDATE, DELETE ON plotmatch.title_people      TO 'plotmatch_app'@'localhost';
+GRANT UPDATE, DELETE ON plotmatch.ratings           TO 'plotmatch_app'@'localhost';
+GRANT UPDATE, DELETE ON plotmatch.watchlist         TO 'plotmatch_app'@'localhost';
+GRANT UPDATE, DELETE ON plotmatch.sessions          TO 'plotmatch_app'@'localhost';
+GRANT UPDATE, DELETE ON plotmatch.session_members   TO 'plotmatch_app'@'localhost';
+GRANT UPDATE, DELETE ON plotmatch.session_swipes    TO 'plotmatch_app'@'localhost';
+GRANT UPDATE, DELETE ON plotmatch.session_recs      TO 'plotmatch_app'@'localhost';
+GRANT UPDATE, DELETE ON plotmatch.title_embeddings  TO 'plotmatch_app'@'localhost';
 
 -- --- Read-only reporting account (dashboards, marks demo, BI tools) ----------
 GRANT SELECT ON plotmatch.view_title_summary       TO 'plotmatch_readonly'@'localhost';
@@ -113,13 +139,15 @@ SHOW GRANTS FOR 'plotmatch_admin'@'localhost';
 -- SECTION 5 — REVOKE, and runtime permission changes (rubric: feature RUD)
 -- =============================================================================
 
--- 5a. DCL revoke: withdraw a privilege from a MySQL account.
-REVOKE DELETE ON plotmatch.* FROM 'plotmatch_app'@'localhost';
+-- 5a. DCL revoke. A REVOKE must match the level at which the privilege was
+--     granted; titles holds a table-level grant, so a table-level revoke
+--     applies to it cleanly.
+REVOKE DELETE ON plotmatch.titles FROM 'plotmatch_app'@'localhost';
 SHOW GRANTS FOR 'plotmatch_app'@'localhost';
+-- The app can no longer delete a title, though it can still update one.
 
--- Restore it, since the app does need to delete watchlist rows.
-GRANT DELETE ON plotmatch.* TO 'plotmatch_app'@'localhost';
-REVOKE UPDATE, DELETE ON plotmatch.audit_log FROM 'plotmatch_app'@'localhost';
+-- Restore it.
+GRANT DELETE ON plotmatch.titles TO 'plotmatch_app'@'localhost';
 FLUSH PRIVILEGES;
 
 -- 5b. Application-level revoke: strip 'title.archive' from moderators at
