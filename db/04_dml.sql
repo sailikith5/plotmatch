@@ -51,9 +51,14 @@ JOIN users  u ON u.id = w.user_id
 WHERE u.email = 'kavya@plotmatch.dev';
 
 -- 1d. INSERT through a stored procedure (atomic upsert).
-CALL sp_upsert_rating(
-    (SELECT id FROM users  WHERE email = 'kavya@plotmatch.dev'),
-    (SELECT id FROM titles WHERE name  = 'Annihilation'),
+-- Resolve the ids in their own statements first. MySQL locks every table a
+-- statement touches, subqueries included, so passing (SELECT ... FROM titles)
+-- straight into the CALL would leave `titles` in use when the rating trigger
+-- tries to update it -- ERROR 1442. Two SET statements sidestep it entirely.
+SET @kavya_id        = (SELECT id FROM users  WHERE email = 'kavya@plotmatch.dev');
+SET @annihilation_id = (SELECT id FROM titles WHERE name  = 'Annihilation');
+
+CALL sp_upsert_rating(@kavya_id, @annihilation_id,
     5, 'The lighthouse sequence is the most unsettling thing I have seen.');
 
 SELECT t.name, t.avg_rating, t.rating_count
@@ -120,9 +125,12 @@ ORDER BY id DESC LIMIT 1;
 -- 3a. DELETE a single row and watch the statistics trigger correct the parent.
 SELECT name, avg_rating, rating_count FROM titles WHERE name = 'Annihilation';
 
-DELETE FROM ratings
-WHERE user_id  = (SELECT id FROM users  WHERE email = 'kavya@plotmatch.dev')
-  AND title_id = (SELECT id FROM titles WHERE name  = 'Annihilation');
+-- Same reason as 1d: this DELETE fires trg_ratings_after_delete, which
+-- updates `titles`, so the DELETE itself must not read `titles`.
+SET @kavya_id        = (SELECT id FROM users  WHERE email = 'kavya@plotmatch.dev');
+SET @annihilation_id = (SELECT id FROM titles WHERE name  = 'Annihilation');
+
+DELETE FROM ratings WHERE user_id = @kavya_id AND title_id = @annihilation_id;
 
 SELECT name, avg_rating, rating_count FROM titles WHERE name = 'Annihilation';
 

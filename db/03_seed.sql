@@ -269,6 +269,18 @@ JOIN people p ON p.name = m.person_name;
 -- directly — that is the whole point of the demonstration.
 -- =============================================================================
 
+-- MySQL refuses to let a trigger UPDATE a table that the statement which
+-- fired the trigger is already reading. This INSERT fires
+-- trg_ratings_after_insert, which calls sp_recalc_title_stats to update
+-- `titles` -- so the INSERT must not itself read `titles`, or it fails with
+--   ERROR 1442: Can't update table 'titles' in stored function/trigger
+--               because it is already used by the statement which invoked it
+-- Resolving the title ids into a temporary table first keeps `titles` out of
+-- the invoking statement, so the trigger is free to update it. The
+-- application never hits this: sp_upsert_rating inserts explicit ids and
+-- never joins to `titles`.
+CREATE TEMPORARY TABLE tmp_title_ids AS SELECT id, name FROM titles;
+
 INSERT INTO ratings (user_id, title_id, score, review_text)
 SELECT u.id, t.id, m.score, m.review_text
 FROM (
@@ -304,7 +316,9 @@ FROM (
     SELECT 'mod@plotmatch.dev',  'Dune', 3, 'Admire it more than I enjoy it.'
 ) m
 JOIN users  u ON u.email = m.email
-JOIN titles t ON t.name  = m.title_name;
+JOIN tmp_title_ids t ON t.name = m.title_name;
+
+DROP TEMPORARY TABLE tmp_title_ids;
 
 -- =============================================================================
 -- Watchlists
