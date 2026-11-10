@@ -1,0 +1,56 @@
+{
+  "_comment": [
+    "Atlas Vector Search index definition for the `title_vectors` collection.",
+    "",
+    "HOW TO CREATE IT",
+    "  Atlas UI:  Cluster -> Atlas Search -> Create Search Index ->",
+    "             JSON Editor -> Vector Search -> paste the `definition` object",
+    "             below -> name it `vector_index`.",
+    "  Atlas CLI: atlas clusters search indexes create --file db/mongo/02_vector_index.json",
+    "",
+    "WHY THESE SETTINGS",
+    "  numDimensions 384 — matches all-MiniLM-L6-v2, the model named in",
+    "    MySQL title_embeddings.model_name. The two MUST agree; if the model is",
+    "    ever changed, this index has to be rebuilt and every vector recomputed.",
+    "  similarity cosine — the embeddings are L2-normalised, so cosine measures",
+    "    pure orientation (topic/mood) and ignores magnitude. For normalised",
+    "    vectors cosine and dotProduct rank identically; cosine is kept because",
+    "    it stays correct if normalisation is ever dropped.",
+    "  filter fields — type/genres/releaseYear are declared as filters so a",
+    "    session restricted to books narrows the candidate set BEFORE the ANN",
+    "    search runs, rather than discarding results afterwards.",
+    "",
+    "NO ATLAS CLUSTER? The application falls back to exact cosine similarity",
+    "computed in Node (VECTOR_BACKEND=local in .env). At this catalogue size",
+    "that is a few milliseconds and returns identical rankings, since brute",
+    "force is what ANN approximates. See src/lib/vector.js."
+  ],
+
+  "collectionName": "title_vectors",
+  "database": "plotmatch",
+  "name": "vector_index",
+  "type": "vectorSearch",
+
+  "definition": {
+    "fields": [
+      {
+        "type": "vector",
+        "path": "embedding",
+        "numDimensions": 384,
+        "similarity": "cosine"
+      },
+      {
+        "type": "filter",
+        "path": "type"
+      },
+      {
+        "type": "filter",
+        "path": "genres"
+      },
+      {
+        "type": "filter",
+        "path": "releaseYear"
+      }
+    ]
+  }
+}
